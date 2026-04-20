@@ -1,3 +1,5 @@
+# Authors: Mao Yicheng, Yang Andi
+
 import calendar
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -114,3 +116,11 @@ def spending_heatmap(transactions):
             sym = "█"
         result[date_str] = (sym, amt)
     return result
+
+
+def get_spending_outliers(transactions, top_percent=0.05):
+    if not transactions:
+        return []
+    ordered = sorted(transactions, key=lambda x: x["amount"], reverse=True)
+    count = max(1, int(len(ordered) * top_percent))
+    return ordered[:count]

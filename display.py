@@ -1,3 +1,5 @@
+# Authors: Yang Andi
+
 import calendar
 import os
 from datetime import datetime
@@ -18,6 +20,7 @@ from analytics import (
     get_totals_by_category,
     linear_forecast,
     spending_heatmap,
+    get_spending_outliers,
 )
 
 console = Console()
@@ -253,6 +256,20 @@ def print_heatmap(transactions):
 
     console.print(table)
     console.print()
+
+
+def print_outliers(transactions):
+    outliers = get_spending_outliers(transactions)
+    if not outliers:
+        return
+    table = Table(title="🚩 Significant Spendings (Top 5%)", box=box.SIMPLE_HEAVY, expand=False)
+    table.add_column("Date", style="magenta")
+    table.add_column("Category", style="yellow")
+    table.add_column("Amount", style="green", justify="right")
+    table.add_column("Description")
+    for t in outliers:
+        table.add_row(t["date"], t["category"], f"HK${t['amount']:.2f}", t["description"])
+    console.print(table)
 
 
 def export_report(transactions, budget_rules, categories, config, filename=None):

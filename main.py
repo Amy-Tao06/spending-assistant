@@ -1,3 +1,5 @@
+# Authors: Yang Andi, Mao Yicheng
+
 import questionary
 from questionary import Separator, Style
 
@@ -24,6 +26,7 @@ from display import (
     print_forecast,
     print_header,
     print_heatmap,
+    print_outliers,
     print_savings_goal,
     print_statistics,
     print_top_categories,
@@ -248,6 +251,7 @@ def statistics_flow():
         "Category Totals — Current Month",
         "Category Totals — All Time",
         "Top 3 Categories",
+        "Major Expenses (Top 5%)",
         _sep("Trends & Forecast"),
         "Spending Trends (7d vs 30d)",
         "Spending Forecast",
@@ -267,6 +271,8 @@ def statistics_flow():
         print_statistics(transactions)
     elif action == "Top 3 Categories":
         print_top_categories(transactions)
+    elif action == "Major Expenses (Top 5%)":
+        print_outliers(transactions)
     elif action == "Spending Trends (7d vs 30d)":
         print_trends(transactions)
     elif action == "Budget Progress Bars":

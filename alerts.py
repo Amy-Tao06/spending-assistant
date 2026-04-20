@@ -1,8 +1,11 @@
+# Authors: Mao Yicheng, Yang Andi
+
 from datetime import datetime
 from analytics import (
     get_daily_totals_by_category,
     get_totals_by_category,
     get_consecutive_overspend,
+    linear_forecast,
 )
 
 
@@ -67,6 +70,18 @@ def check_consecutive_overspend(transactions, budget_rules):
     return alerts
 
 
+def check_forecast_alerts(transactions, budget_rules):
+    projected_total = linear_forecast(transactions)
+    monthly_limit = 5000
+    alerts = []
+    if projected_total > monthly_limit:
+        alerts.append({
+            "type": "forecast_warning",
+            "message": f"Trend Alert: Projected monthly spend (HK${projected_total:.2f}) exceeds budget!",
+        })
+    return alerts
+
+
 def check_uncategorized(transactions, categories):
     alerts = []
     for t in transactions:
@@ -85,5 +100,6 @@ def get_all_alerts(transactions, budget_rules, categories):
     alerts += check_daily_caps(transactions, budget_rules)
     alerts += check_percentage_thresholds(transactions, budget_rules)
     alerts += check_consecutive_overspend(transactions, budget_rules)
+    alerts += check_forecast_alerts(transactions, budget_rules)
     alerts += check_uncategorized(transactions, categories)
     return alerts

@@ -1,153 +1,145 @@
-# **MUST-HAVE FEATURES**
+# Feature List
 
-> **UI Design Details**: See [UI.md](UI.md) for menu layout, display formatting, and validation specs.
+> UI layout and display specs: [UI.md](UI.md)
 
-## **1\. Transaction Management**
+---
+
+## Must-Have Features
+
+### 1. Transaction Management
 
 **1.1 Add Transaction**  
-Prompts the user to enter a date (YYYY-MM-DD), a positive amount, a category from the predefined list, and a short description. Assigns a unique auto-incrementing ID to each transaction and saves it to transactions.json.  
-Difficulty: ⭐ Easy
+Prompts for date (YYYY-MM-DD), amount, currency, category, and description. Assigns a unique auto-incrementing ID and saves to `transactions.json` immediately. Currency defaults to HKD; other currencies (CNY, USD, JPY, etc.) show an HKD equivalent inline using current rates.  
+Difficulty: Easy
 
-**1.2 Transaction Editing and Deletion**  
-Allows a user to find a transaction by its ID and either update any of its fields or remove it entirely. The program reloads and re-saves the full list after every change to keep the file consistent.  
-Difficulty: ⭐⭐ Medium
+**1.2 Edit and Delete Transactions**  
+User selects a transaction by ID from the table, then chooses to edit a specific field or delete the record. Any change re-saves the full list to disk immediately.  
+Difficulty: Medium
 
 **1.3 Category Customization**  
-Categories are stored in data/config.json instead of being hardcoded. Users can add or remove categories via a dedicated menu option. All features (validation, statistics, alerts) dynamically read from this config file.  
-Difficulty: ⭐⭐ Medium
+Categories live in `config/config.json`, not hardcoded. Users can add or remove categories from a dedicated menu. All features — validation, statistics, alerts — read dynamically from config.  
+Difficulty: Medium
 
 ---
 
-## **2\. Data & File Management**
+### 2. Data and File Management
 
-**2.1 Load and Save Data to CSV/JSON Files**  
-All transactions and budget rules are persisted to local files. Every time a transaction is added, edited, or deleted, save\_data() is called immediately to prevent data loss. On startup, load\_data() reads the file into memory as a Python list of dictionaries.  
-Difficulty: ⭐ Easy
+**2.1 Persistent JSON Storage**  
+All data (transactions, budget rules, config) is stored in local JSON files. Every add/edit/delete calls `save_transactions()` or `save_budget_rules()` immediately. On startup, `load_transactions()` reads the file into memory as a list of dicts.  
+Difficulty: Easy
 
-**2.2 Error Handling for Missing, Empty, or Malformed Files**  
-Uses try-except blocks to catch FileNotFoundError (file does not exist), json.JSONDecodeError (corrupted JSON), and empty file scenarios. In each case, the program prints a helpful error message and either creates a fresh empty file or prompts the user to fix the issue. The program must never crash.  
-Difficulty: ⭐⭐ Medium
+**2.2 Error Handling for Corrupt or Missing Files**  
+`_load_json()` in `data.py` catches `FileNotFoundError` (missing file), `json.JSONDecodeError` (corrupt JSON), and empty file content. In all cases, a safe default is returned and the program continues without crashing. Config merges any missing keys from `DEFAULT_CONFIG` automatically.  
+Difficulty: Medium
 
 ---
 
-## **3\. Interface & Validation**
+### 3. Interface and Validation
 
-**3.1 Text-Based CLI Menu with Numbered Options**  
-A while True loop that prints a clearly formatted numbered menu on every iteration. Each number maps to a function call. Invalid menu choices are caught and re-prompted gracefully.
+**3.1 Interactive CLI Menu**  
+Main menu and all sub-menus use `questionary.select()` with arrow-key navigation — no numbered input. Options are grouped with labelled separators. A custom green style (`#00ff88`) is applied consistently. After each action, `press_any_key_to_continue()` pauses before returning to the menu. `Ctrl+C` exits cleanly at any prompt.
 
-**See [UI.md](UI.md) for the complete menu layout & design specs.**
+See [UI.md](UI.md) for menu layout and style details.
 
-**Difficulty: ⭐ Easy**
+Difficulty: Easy
 
-**3.2 Input Validation (Dates, Amounts, Categories)**  
-Every user input goes through validator.py before being accepted. Dates are checked with datetime.strptime(), amounts use try: float() with a check that the value is positive, and categories are validated against the dynamic list in config.json. Each failed validation re-prompts the user with a clear error message instead of crashing.
+**3.2 Input Validation**  
+Every text input loops until valid. Dates use `datetime.strptime()`, amounts require `float > 0`, percentages require `0 < x <= 100`, descriptions must be non-empty. Category and currency are always chosen from a `questionary.select()` list, so they can't be invalid. Validation logic is centralized in `validator.py`.
 
-**See [UI.md](UI.md) for validation rules table & error messages.**
+See [UI.md](UI.md) for the full validation table.
 
-Difficulty: ⭐⭐ Medium
+Difficulty: Medium
 
 **3.3 View and Filter Transactions**  
-Allows users to view their full transaction history or filter it by a specific date range or category. Results are printed as a formatted table with columns for ID, Date, Amount, Category, and Description.
-
-**See [UI.md](UI.md) for table layout & formatting example.**
-
-Difficulty: ⭐⭐ Medium
+Four view modes in a sub-menu: all transactions, filter by date range, filter by category, and keyword search (case-insensitive match on description). Results display as a `rich` table sorted newest-first, with HKD equivalents shown for foreign-currency entries.  
+Difficulty: Medium
 
 ---
 
-## 
+### 4. Statistics and Analytics
 
-## 
-
-## **4\. Statistics & Analytics**
-
-**4.1 Summary Statistics (Totals by Category, Daily/Weekly/Monthly)**  
-Iterates through all loaded transactions, groups them by category using a dictionary accumulator, and filters by date range using datetime comparisons. Outputs a formatted table showing spending per category for the chosen time period.  
-Difficulty: ⭐⭐ Medium
+**4.1 Spending by Category**  
+Groups transactions by category using a `defaultdict`, with optional date filtering. Available for the current month or all time. Displays a `rich` table with inline unicode bar charts and percentage share, color-coded by proportion (green/yellow/red).  
+Difficulty: Medium
 
 **4.2 Top-3 Spending Categories**  
-Takes the category totals dictionary, sorts it by value in descending order, and prints the top 3 results with their amounts and percentage of total spending.  
-**Difficulty: ⭐ Easy**
+Sorts category totals descending and shows the top 3 with medal labels, amounts, and percentage share.  
+Difficulty: Easy
 
-**4.3 Spending Trends (Last 7 and 30 Days)**  
-Computes the average daily spending for the last 7 days and last 30 days separately. Compares the two averages and prints whether the user is spending more or less recently. For example: "Your spending this week is 23% higher than your 30-day average."  
-Difficulty: ⭐⭐ Medium
+**4.3 Spending Trends (7d vs 30d)**  
+Computes daily average spend over the last 7 and 30 days. Compares the two and shows the direction and percentage change (e.g., spending 12.6% more this week than the 30-day average).  
+Difficulty: Medium
 
 **4.4 Export Summary Report**  
-Generates a neatly formatted .txt file in the outputs/ folder summarising the current month's spending by category, trends, top-3 categories, and any active budget alerts. This file is used directly as the case study output evidence in the final report.
-
-**See [UI.md](UI.md) for export report format & layout.**
-
-Difficulty: ⭐⭐ Medium
+Generates a plain-text `.txt` file in `outputs/` with timestamp in the filename. Covers current month's category totals, 7d/30d trends, top-3 categories, and active alerts. Uses `Console(no_color=True, width=72)` so the file is readable in any editor.  
+Difficulty: Medium
 
 ---
 
-## **5\. Alert System**
+### 5. Alert System
 
-**5.1 Rule-Based Alerts (Daily/Weekly Caps, Percentage Thresholds)**  
-Reads all rules from budget\_rules.json. After every new transaction is added, the alert system automatically checks if today's total for a category exceeds its daily cap, or if a category's share of total spending exceeds its percentage threshold (e.g., Transport \> 30% of total budget).
+**5.1 Rule-Based Alerts**  
+Reads rules from `budget_rules.json`. Each rule can have a daily cap, monthly cap, and percentage threshold. After every new transaction, the system checks all rules and prints any triggered alerts. Alert types: daily cap exceeded, percentage threshold exceeded, consecutive overspend (3+ days), forecast warning (projected month-end spend exceeds total monthly caps), and uncategorized transactions.
 
-**See [UI.md](UI.md) for alert display format.**
+See [UI.md](UI.md) for alert display format.
 
-Difficulty: ⭐⭐ Medium
+Difficulty: Medium
 
-**5.2 Consecutive Overspend Day Detection**  
-Checks the last N days of daily totals for a specific category. If the daily cap was exceeded for 3 or more consecutive days, a special escalated warning is triggered. For example: "Warning: You have exceeded your food budget for 3 days in a row\!"  
-Difficulty: ⭐⭐⭐ Hard
+**5.2 Consecutive Overspend Detection**  
+Checks daily totals for a category going backwards from today. If the daily cap was exceeded for 3 or more consecutive days, a high-priority alert fires.  
+Difficulty: Hard
 
 **5.3 Uncategorized Transaction Warnings**  
-After loading transactions, scans for any entries with "category": "Uncategorized" or a category that no longer exists in config.json. Prints a warning listing the affected transaction IDs and prompts the user to recategorize them.  
-Difficulty: ⭐ Easy
+Scans all transactions for entries with `"Uncategorized"` or a category not in `config.json`. Each match produces a warning with the transaction ID.  
+Difficulty: Easy
 
 ---
 
-## **6\. Testing**
+### 6. Testing
 
-**6.1 Test Data Generator with Edge Cases**  
-A standalone tests/test\_generator.py script that uses random and datetime libraries to generate 100+ realistic fake transactions spread across the last 30 days. Must deliberately include edge cases: an entire day of zero spending, a batch of uncategorized transactions, and a sudden spike in one category to simulate subscription creep.  
-Difficulty: ⭐⭐ Medium
-
----
-
-# **PROPOSED NICE-TO-HAVE FEATURES**
-
-**P1. Budget Progress Bar**  
-When viewing summaries, prints a dynamic text-based progress bar next to each category.  
-Built using simple string multiplication. Turns red (using ANSI escape codes) if over 100%.
-
-**See [UI.md](UI.md) for implementation details & example.**
-
-Difficulty: ⭐ Easy — highest impact-to-effort ratio of all proposed features.
-
-**P2. Transaction Search by Keyword**  
-Adds a search option to the CLI menu where users can type a keyword (e.g., "McDonald's") and the program filters all transactions whose description contains that string (case-insensitive).  
-Difficulty: ⭐ Easy
-
-**P3. Multi-Currency Support**  
-Adds an optional currency field to each transaction (default: HKD). Stores fixed exchange rates in config.json (e.g., USD: 7.78, CNY: 1.07). When displaying summaries, converts all amounts to HKD automatically. Useful for international students and directly supports a strong design trade-off discussion in the final report.  
-Difficulty: ⭐⭐ Medium
-
-**P4. Spending Goal Tracker**  
-Users can set a monthly savings goal in config.json (e.g., "Save HK$500 this month"). The program calculates income minus total spending and displays how close the user is to hitting their savings target, with a progress bar.  
-Difficulty: ⭐⭐ Medium
-
-**P5. Recurring Transaction Support**  
-Allows users to flag a transaction as recurring with a set frequency (monthly, weekly). On startup, the program checks if any recurring transaction is due today and automatically logs it or reminds the user. Directly addresses the subscription creep case study.  
-Difficulty: ⭐⭐⭐ Hard
-
-**P6. Simple Regression-Based Spending Forecasting**  
-Uses the last 30 days of daily totals as data points to fit a linear trend using Python's built-in statistics library (no external libraries needed). Predicts the likely total spending by end of the current month and warns the user if it is projected to exceed their monthly budget.  
-Difficulty: ⭐⭐⭐ Hard
-
-**P7. Spending Heatmap (Text-Based ASCII Calendar)**  
-Prints a calendar grid for the current month where each day cell is filled with a symbol indicating spending intensity (e.g., ░ \= low, ▒ \= medium, █ \= high) based on that day's total relative to the daily average.  
-Difficulty: ⭐⭐⭐ Hard
+**6.1 Test Data Generator**  
+`tests/test_generator.py` generates 120 realistic fake transactions with a fixed random seed for reproducibility. Deliberately includes: 5 uncategorized entries (to trigger uncategorized alerts), 1 zero-amount refund (tests edge case handling), and 15 high-value Entertainment entries in the last 5 days (to trigger percentage threshold and consecutive overspend alerts). Also generates matching budget rules and config. Written by Wang Ziyi.  
+Difficulty: Medium
 
 ---
 
-# **FEATURES TO AVOID**
+## Nice-to-Have Features
 
-* ❌ GUI or Web Dashboard — not required and wastes time better spent on reports.  
-* ❌ Live Bank/API Syncing — explicitly out of scope per project guidelines.  
-* ❌ Machine Learning or Complex Forecasting — far beyond course level and not justified.  
-  ---
+### Implemented
+
+**P1. Budget Progress Bars** (implemented)  
+Daily progress bar per category shown as a unicode bar chart in a `rich` table. Color-coded: green below 80%, yellow 80–99%, red at or above 100%. Shown in the statistics sub-menu and automatically after adding a transaction.
+
+**P2. Keyword Search** (implemented)  
+Available as a view mode in "View / Filter Transactions". Case-insensitive search against the description field.
+
+**P3. Multi-Currency Support** (implemented)  
+Each transaction stores a currency field. Eight currencies supported: HKD, CNY, USD, JPY, KRW, NTD, GBP, EUR. Exchange rates are stored in `config.json` and displayed as HKD equivalents in all tables.
+
+**P3-ext. Live Exchange Rates** (implemented — extended from P3)  
+On startup, `fetch_exchange_rates()` in `data.py` pulls live rates from `open.er-api.com` via `urllib.request` and writes them to `config.json`. Falls back to cached rates silently if offline. Idea by Yang Andi; API suggested by AI; JSON storage approach by Yang Andi.
+
+**P4. Savings Goal Tracker** (implemented)  
+Users set monthly income and a savings goal in Settings. The savings view shows income, total spent, remaining, and a progress bar toward the goal with a status message.
+
+**P6. Spending Forecast** (implemented)  
+Extrapolates this month's total from the daily average so far using linear scaling (`spent / days_elapsed * days_in_month`). Displayed in the statistics sub-menu and used to generate forecast-based alerts.
+
+**P7. Spending Heatmap** (implemented)  
+Calendar grid for the current month (Mon–Sun columns). Each day shows a unicode block symbol (░▒▓█) based on spending relative to the month's daily average. Implemented in `analytics.py` (`spending_heatmap`) and rendered in `display.py` (`print_heatmap`).
+
+**P8. Major Expense Outliers** (implemented — not originally planned)  
+Shows the top 5% of transactions by amount. Implemented by Mao Yicheng (`print_outliers` in `display.py`, `get_spending_outliers` in `analytics.py`).
+
+### Not Implemented
+
+**P5. Recurring Transactions**  
+Flagging transactions as recurring and auto-logging them on startup. Descoped — adds significant complexity and the subscription creep case study is covered via the alert system and test data instead.
+
+---
+
+## Features to Avoid
+
+- GUI or web dashboard — out of scope; text CLI is required.
+- Live bank/API syncing for transactions — explicitly excluded by project guidelines.
+- Machine learning or complex statistical models — beyond course level; linear extrapolation is sufficient.
